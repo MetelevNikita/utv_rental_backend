@@ -1,5 +1,6 @@
 const Pool = require("../database/db")
 
+
 const getAllProduct = async (req, res) => {
   try {
 
@@ -46,7 +47,10 @@ const postProduct  = async  (req, res)  => {
 
     const { title, category, description, price, quantity } = req.body
     const host = req.host;
-    const filePath = "https://utvls.tw1.su/" + req.file.path
+
+
+
+    const filePath = "http://localhost:8000/upload/equipment/" + req.file.originalname
 
     const newProduct = await Pool.query("INSERT INTO product ( title, category, description, price, quantity, image ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",  [title, category, description, price, quantity, filePath])
 

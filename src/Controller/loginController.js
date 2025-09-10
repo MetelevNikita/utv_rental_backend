@@ -1,5 +1,11 @@
 const Pool = require('../database/db')
 const jwt = require('jsonwebtoken')
+const path = require('path')
+const dotenv = require('dotenv').config({
+  path: path.resolve(process.cwd(), '.env'),
+})
+
+console.log(process.env.SECRET_KEY)
 
 
 const postLogin = async (req, res) => {
@@ -7,6 +13,8 @@ const postLogin = async (req, res) => {
   try {
 
     const {email, password}  =  req.body;
+
+    console.log(req.body)
 
     if (!email || !password)   {
       res.status(400).send({message: 'поля не заполнены'})

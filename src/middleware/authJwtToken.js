@@ -1,4 +1,11 @@
 const jwt = require('jsonwebtoken')
+const path = require('path')
+const dotenv = require('dotenv').config({
+  path: path.resolve(process.cwd(), '.env')
+});
+
+
+console.log(process.env.SECRET_KEY)
 
 
 

@@ -53,7 +53,7 @@ formTeam.addEventListener('submit', async (e) => {
 
 
 
-const productUrl = 'https://utvls.tw1.su/api/v1/product'
+const productUrl = 'http://localhost:8000/api/v1/product'
 
 
 const categoryArr = ['Камеры', 'Свет', 'Звук', 'Операторское оборудование', 'Техника для трансляций']
