@@ -1,6 +1,13 @@
-const Pool = require('../database/db')
+const { prisma } = require('../../lib/prisma.js')
+const { base64ToImage } = require('./../utils/base64ToImage.js')
+const fs = require('fs')
+const path = require('path')
 
 
+// 
+
+
+const endPoint = 'team'
 
 
 // get
@@ -10,16 +17,23 @@ const getTeamCard = async (req, res) => {
 
   try {
 
-    const teamCard = await Pool.query('SELECT * FROM team')
-    if (teamCard.rows.length < 1) {
-      res.status(400).json({message: 'No team found'})
+    const allTeams = await prisma.team.findMany({})
+
+    if (!allTeams) {
+      return res.status(400).send({
+        message: 'Карточки не найдены'
+      })
     }
 
-    res.status(200).json(teamCard.rows)
+    if (allTeams.length  <  1) {
+      return res.status(200).send([])
+    }
+
+    return res.status(200).send(allTeams)
 
   } catch (error) {
     console.log(error)
-    res.status(400).send([])
+    return res.status(400).send([])
   }
 }
 
@@ -31,18 +45,32 @@ const createTeamCard = async (req, res) => {
 
   try {
 
-    const { name, profession } = req.body
-    const host = req.host;
-    const filePath = "https://utvls.tw1.su/" + req.file.path
+    const data = req.body
 
-    const newTeamCard = await Pool.query('INSERT INTO team (name, profession, image) VALUES ($1, $2, $3) RETURNING *', [name, profession, filePath])
+    const {name, profession, image} = req.body
 
-    if(!newTeamCard.rows[0]) {
-      res.status(400).json({message: 'Карточка не создана'})
-      return
+
+    const urlImage = base64ToImage(data.image, endPoint, name)
+    console.log(urlImage)
+
+
+    const newTeam = await prisma.team.create({
+      data: {
+        name: name,
+        profession: profession,
+        image: urlImage
+      }
+    })
+
+
+    if (!newTeam) {
+      return res.status(400).send({
+        message: 'Карточка не создана'
+      })
     }
 
-    res.status(200).json(newTeamCard.rows[0])
+    return res.send({message: 'Новый пользователь успешно создан'})
+
 
   } catch (error) {
     console.log(error)
@@ -59,17 +87,59 @@ const createTeamCard = async (req, res) => {
 const deleteTeamCard  = async  (req, res)  =>  {
   const { id } = req.params
 
+  console.log(id)
+
   if(!id.typeof ===  'number')  {
     res.status(400).json({message:  'Id не число'})
   }
 
-  const  deleteTeamCard  = await Pool.query('DELETE FROM team WHERE id = $1',  [id])
 
-  if(!deleteTeamCard.rows[0])   {
-    res.status(400).json({message: `По данному ${id} не найдено карточки`})
+  const currentTeam = await prisma.team.findFirst({
+    where: {
+      id: Number(id)
+    }
+  })
+
+
+  const pathUpload = path.join(process.cwd(), 'public')
+  const fullPath = path.join(pathUpload, currentTeam.image)
+
+  console.log('PATH ', fullPath)
+
+
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath)
+  } else {
+    console.log('Файл в папке на удаления не найден')
   }
-  console.log(deleteTeamCard.rows[0])
-  res.status(200).send(deleteTeamCard.rows[0])
+
+   
+
+  const deleteTeam = await prisma.team.delete({
+    where: {
+      id: Number(id)
+    }
+  })
+
+  if (!deleteTeam) {
+    return res.status(400).json({
+      message: 'Карточка не удалена'
+    })
+  }
+
+
+  return res.status(200).json({message: `Файл удален ${currentTeam.image}`})
+
+
+
+
+
+  res.send('asdasdasd')
+
+
+
+
+
 }
 
 

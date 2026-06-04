@@ -1,65 +1,161 @@
-const Pool = require("../database/db")
+const { prisma } = require('./../../lib/prisma.js')
+const fs = require('fs')
+const path = require('path')
+const os = require('os')
+
+
+// utill
+
+const { base64ToImageProduct } = require('./../utils/base64ToImageProduct.js')
+const { patchImageFromFolder } = require('./../utils/patchImageFromFolder.js')
+
+// 
+
+
+async function replaceImageFolder (newImageBase64, oldImagePath) {
+
+
+  try {
+    
+    const imageOneParse =  path.parse(oldImagePath)
+    const splitPath = imageOneParse.dir.split('/')
+
+    let subfolder;
+    let endfolder;
+
+    if (splitPath.length === 5) {
+      subfolder = splitPath[3]
+      endfolder = splitPath[4]
+    } else if (splitPath.length === 4) {
+      endfolder = splitPath[3]
+    }
+
+
+    changeImageOne = await base64ToImageProduct(newImageBase64, subfolder, endfolder, `${imageOneParse.name}_1`)
+
+
+    // delete old image
+
+
+    const folderImage = path.join(process.cwd(), 'public', oldImagePath)
+    const data = fs.unlinkSync(folderImage)
+    console.log(data)
+    return changeImageOne
+
+
+  } catch (error) {
+    
+  }
+
+}
+
+
+// 
+
+
+const categoryArr = [
+  {
+    item: 'Камеры',
+    value: 'camera'
+  },
+  {
+    item: 'Свет',
+    value: 'light'
+  },
+  {
+    item: 'Звук',
+    value: 'sound'
+  },
+  {
+    item: 'Операторское оборудование',
+    value: 'operator_equipment'
+  },
+]
+
 
 
 const getAllProduct = async (req, res) => {
   try {
 
-    const allProduct = await Pool.query("SELECT * FROM product")
+    const allProduct = await prisma.product.findMany()
 
-    if(allProduct.rows.length < 1)  {
-      res.status(404).send([])
-      return
+    if (allProduct.length < 1 || !allProduct) {
+      return res.status(200).json([])
     }
 
-    res.status(200).send(allProduct.rows)
+    return res.status(200).json(allProduct)
 
   } catch (error) {
     console.log(error)
-    res.status(500).send({message: 'Internal Server Error' })
+    res.status(500).send({message: 'Не удалось получить списко оборудования' })
 
   }
 }
-
-
-const getSingleProduct = async (req, res) => {
-  try {
-
-    const { id } = req.params
-    const  singleProduct  = await Pool.query("SELECT * FROM product WHERE id = $1", [id])
-
-    if(product.rows.length  <  1)   {
-      res.status(404).send({message:  'No Product Found'})
-    }
-
-    res.status(200).send(singleProduct.rows[0])
-
-  } catch (error) {
-    console.log(error)
-    res.status(500).send({message: 'Internal Server Error' })
-  }
-
-}
-
 
 
 const postProduct  = async  (req, res)  => {
   try {
 
-    const { title, category, description, price, quantity } = req.body
-    const host = req.host;
 
 
+    const data = req.body
 
-    const filePath = "http://localhost:8000/upload/equipment/" + req.file.originalname
+    const {title, category, description, set, price, quantity, imageOne, imageTwo, imageThree} = req.body
+    console.log(title, category, description, price, quantity)
 
-    const newProduct = await Pool.query("INSERT INTO product ( title, category, description, price, quantity, image ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",  [title, category, description, price, quantity, filePath])
 
-    if(newProduct.rows.length  <  1)   {
-      res.status(404).send({message:  'Product not Created'})
-      return
+    const currentCategory = categoryArr.find(item => item.value === category) ?? 'camera'
+    console.log(currentCategory)
+
+
+    let urlImageOne;
+    let urlImageTwo;
+    let urlImageThree;
+
+    if (imageOne) {
+      urlImageOne = base64ToImageProduct(imageOne, currentCategory.value, `folder_${title}`, `${title}_1`)
     }
 
-    res.status(200).send(newProduct.rows[0])
+    if (imageTwo) {
+      urlImageTwo = base64ToImageProduct(imageTwo,  currentCategory.value, `folder_${title}`, `${title}_2`)
+    }
+
+    if (imageThree) {
+      urlImageThree = base64ToImageProduct(imageThree, currentCategory.value, `folder_${title}`, `${title}_3`)
+    }
+    
+
+    
+
+    const newProduct = await prisma.product.create({
+      data: {
+        title: title,
+        category: category,
+        description: description,
+        set: set,
+        price: price,
+        quantity: quantity,
+        imageOne: urlImageOne ?? null,
+        imageTwo: urlImageTwo ?? null,
+        imageThree: urlImageThree ?? null
+      }
+
+    })
+
+
+    console.log(newProduct)
+
+    if (!newProduct) {
+      return res.status(400).send({
+        message: 'Product not created'
+      })
+    }
+
+
+    return res.status(200).send({message: `Карточка товара успешно создана`})
+
+
+
 
   } catch (error) {
     console.log(error)
@@ -69,20 +165,65 @@ const postProduct  = async  (req, res)  => {
 }
 
 
-
-
 const deleteProduct  = async  (req, res)  =>  {
   try {
 
     const { id } = req.params
-    const deleteProduct  = await Pool.query("DELETE FROM products WHERE id  =  $1",  [id])
 
-    if(deleteProduct.rows.length  <  1)    {
-      res.status(404).send({message:   'Product not Deleted'})
-      return
+    const currentProduct = await prisma.product.findUnique({
+      where: {
+        id: Number(id)
+      }
+    })
+
+
+    if (!currentProduct) {
+      return res.status(200).json({
+        message: 'Такая карточка товара не найдена'
+      })
     }
 
-    res.status(200).send(deleteProduct.rows[0])
+
+    // 
+
+    let arch;
+    
+    if (os.arch() === 'x64') {
+      arch = '\\'
+    } else if (os.arch() === 'arm64' || os.arch() === 'arm') {
+      arch = '/'
+    } else {
+      arch = '\\'
+    }
+
+    // 
+
+    const splitPath = currentProduct.imageOne.split(arch) ?? []
+    const endPath = splitPath.slice(0, splitPath.length-1).join(arch)
+
+
+    if (fs.existsSync(path.join(process.cwd(), 'public', endPath))) {
+      fs.rmdirSync(path.join(process.cwd(), 'public', endPath), {recursive: true, force: true})
+    } else {
+      console.warn('Изображение в базе не найдено')
+    }
+
+    const deleteProduct = await prisma.product.delete({
+      where: {
+        id: Number(id)
+      }
+    })
+
+    if (!deleteProduct) {
+      return res.status(400).json({
+        message: 'Product not deleted'
+      })
+    }
+
+    return res.status(200).json({message: `Карточка удалена ${currentProduct.title}`})
+
+
+
 
   } catch (error) {
     console.log(error)
@@ -93,4 +234,83 @@ const deleteProduct  = async  (req, res)  =>  {
 
 
 
-module.exports = { getAllProduct, getSingleProduct, postProduct,deleteProduct }
+
+const patchProduct = async (req, res) => {
+  try {
+
+    const { id } = req.params
+
+
+    const card = await req.body
+
+    const currentProduct = await prisma.product.findFirst({
+      where: {
+        id: Number(id)
+      }
+    })
+
+    if (!currentProduct) {
+      return res.status(200).send({
+        message: `Карточка продукта с таким id - ${id} не найдена`
+      })
+    }
+
+    // console.log(currentProduct)
+
+
+
+    let changeImageOne;
+    let changeImageTwo;
+    let changeImageThree;
+
+  
+    if (card.imageOne && currentProduct.imageOne) {
+      changeImageOne = await patchImageFromFolder(card.imageOne, currentProduct.imageOne)
+      console.log('imageOne ', changeImageOne)
+      card.imageOne = changeImageOne
+    }
+
+
+   if (card.imageTwo && currentProduct.imageTwo)  {
+      changeImageTwo = await patchImageFromFolder(card.imageTwo, currentProduct.imageTwo)
+      console.log('imageTwo ', changeImageTwo)
+      card.imageTwo = changeImageTwo
+    }
+    
+    if (card.imageThree && currentProduct.imageThree) {
+      changeImageThree = await patchImageFromFolder(card.imageThree, currentProduct.imageThree)
+      console.log('imageThree ', changeImageThree)
+      card.imageThree = changeImageThree
+    }
+
+
+    const changeProduct = await prisma.product.update({
+      where: {
+        id: Number(id)
+      },
+
+      data: card
+    })
+
+
+    if (!changeProduct) {
+      return res.status(200).send({
+        message: 'Не удалось обновить карточку продукта',
+        sucess: false
+      })
+    }
+
+    return res.status(200).send({
+      message: 'Карточка продукта изменена',
+      sucess: true
+    })
+    
+  } catch (error) {
+    console.log(error)
+    res.status(500).send({message: 'Internal Server Error'})
+  }
+}
+
+
+
+module.exports = { getAllProduct, postProduct, deleteProduct, patchProduct }

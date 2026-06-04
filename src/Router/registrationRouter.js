@@ -10,7 +10,6 @@ const { getUsers, createUser, deleteUser } = require('../Controller/registration
 const registrationRouter = express.Router();
 
 
-
 registrationRouter.get('/users', getUsers)
 
 registrationRouter.post('/registration', createUser)

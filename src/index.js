@@ -2,12 +2,27 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const cookieParser  = require('cookie-parser');
+const dotenv = require('dotenv');
 
-const dotenv= require('dotenv').config({
-  path: path.resolve(process.cwd(), '.env')
-});
+
+
+
+dotenv.config({
+  path: path.resolve(process.cwd(), '../env')
+})
 
 // module
+
+const { telegramBot } = require('./utils/TelegramBot.js')
+const { getYgKeyCache } = require('./utils/YouGileKey.js')
+
+//
+
+
+
+// 
+
+
 
 
 const registrationRouter = require('./Router/registrationRouter')
@@ -15,6 +30,12 @@ const loginRouter  = require('./Router/loginRouter')
 const teamRouter = require('./Router/teamRouter')
 const productRouter = require('./Router/productRouter')
 const portfolioRouter = require('./Router/portfolioRouter')
+const packRouter = require('./Router/packRouter.js')
+const ordersRouter = require('./Router/ordersRouter.js')
+
+// 
+
+const feedbackRouter = require('./Router/feedbackRouter')
 
 //
 
@@ -22,20 +43,41 @@ const app = express();
 
 
 const publicPath = path.join(__dirname, '../public');
-console.log(publicPath);
+const appPath = path.join(__dirname, '../../app/build')
+const adminPath = path.join(__dirname, '../../admin/build')
+
+console.log(publicPath)
+console.log(appPath)
+
+
+// Проверяем существование папок
+const fs = require('fs');
+if (!fs.existsSync(publicPath)) {
+  console.warn('⚠️ Папка public не найдена:', publicPath);
+}
+if (!fs.existsSync(appPath)) {
+  console.warn('⚠️ Папка frontend/build не найдена. Сначала выполните npm run build в папке frontend');
+}
+
 
 // use
 
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({extended:  true}));
-app.use(express.static(publicPath));
-app.use(express.static('public/upload'))
-app.use('/public', express.static('public'));
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended:  true}));
 app.use(cookieParser());
 
-// use routes
+//
+
+
+// middleware
+
+const authJwtToken = require('./middleware/authJwtToken');
+const redirectToApp = require('./middleware/redirectApp.js')
+
+
+// api router
 
 
 app.use('/api/v1', registrationRouter);
@@ -43,44 +85,95 @@ app.use('/api/v1', loginRouter);
 app.use('/api/v1', teamRouter);
 app.use('/api/v1', productRouter);
 app.use('/api/v1', portfolioRouter);
+app.use('/api/v1', packRouter)
+app.use('/api/v1', ordersRouter)
+app.use('/api/v1', feedbackRouter)
 
 
-// middleware
+if (fs.existsSync(adminPath)) {
+  app.use(express.static(adminPath, {
+    index: false
+  }))
+  console.log('✅ React admin build подключен');
+}
 
-const authJwtToken = require('./middleware/authJwtToken');
 
 
-// work router
+if (fs.existsSync(appPath)) {
+  app.use(express.static(appPath, {
+    index: false
+  }));
+  console.log('✅ React app build подключен');
+}
+
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath, {
+   index: false
+  }))
+}
 
 
-app.get('/login', (req, res) => {
-  res.sendFile(publicPath + '/html/login.html');
-})
 
-app.get('/registration', (req, res) => {
-  res.sendFile(publicPath  +  '/html/registration.html');
-})
 
-app.get('/create', authJwtToken, (req, res)  =>  {
-    res.sendFile(publicPath + '/html/main.html');
-})
+app.use((req, res, next) => {
+  console.log('🔍 Запрос:', req.method, req.url);
+  next();
+});
+
+
+// app router
+
 
 app.get('/', (req, res) => {
-  res.redirect('/login');
+  res.sendFile(path.join(appPath, 'index.html'))
 })
 
-app.get('/*',  (req, res)  =>  {
-  res.sendFile(publicPath + '/html/404.html');
+
+// public admin router
+
+app.get('/admin/login', (req, res) => {
+  res.sendFile(path.join(adminPath, 'index.html'))
 })
+
+app.get('/admin/registration', (req, res) => {
+  res.sendFile(path.join(adminPath, 'index.html'))
+})
+
+// protect admin router
+
+app.get('/admin', authJwtToken, (req, res) => {
+  res.sendFile(path.join(adminPath, 'index.html'))
+})
+
+
+app.get('/admin/*', authJwtToken, (req, res) => {
+  res.sendFile(path.join(adminPath, 'index.html'))
+})
+
+
+
+// redirect into app SPA
+
+
+app.get('/*', (req, res) => {
+  res.sendFile(path.join(appPath, 'index.html'));
+});
+
 
 
 // listen
 
 
 const PORT = process.env.PORT || 8000;
-const startServer = () => {
+
+
+const startServer = async () => {
 
   try {
+
+    const key = await getYgKeyCache()
+    process.env.YG_KEY = key.key
+  
      app.listen(PORT, () => {console.log(`Сервер стартовал с порта: ${PORT}`);});
   } catch (error) {
     console.log(error)

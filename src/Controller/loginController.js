@@ -1,45 +1,63 @@
-const Pool = require('../database/db')
+
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 const path = require('path')
 const dotenv = require('dotenv').config({
   path: path.resolve(process.cwd(), '.env'),
 })
-
-console.log(process.env.SECRET_KEY)
+const { prisma } = require('../../lib/prisma.js')
 
 
 const postLogin = async (req, res) => {
 
   try {
 
-    const {email, password}  =  req.body;
+    const {email, password} = req.body;
 
-    console.log(req.body)
+    console.log(email)
+    console.log(password)
 
-    if (!email || !password)   {
-      res.status(400).send({message: 'поля не заполнены'})
-      return
+
+    if (email.trim().length <= 0 || password.trim().length <= 0)   {
+      return res.status(200).send({
+        message: 'поля не заполнены',
+        success: false
+      })
     }
 
-    const confirmLogin = await Pool.query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password])
 
-    if (!confirmLogin.rows)  {
-      res.status(401).send({message: 'Неверный email или пароль'})
-      return
+    const findUser = await prisma.user.findFirst({
+      where: {
+        email: email
+      }
+    })
+
+
+    if (!findUser)  {
+      return res.status(200).send({
+        message: 'Неверный email или пароль',
+        success: false
+      })
     }
 
-    console.log(confirmLogin.rows[0])
 
-    const token  = jwt.sign({email: confirmLogin.rows[0].email}, process.env.SECRET_KEY, {expiresIn: '1h'})
+    const hashPassword = await bcrypt.compare(password, findUser.password)
+
+    const token  = jwt.sign({email: findUser.email}, process.env.SECRET_KEY, {expiresIn: '1h'})
     console.log(token)
     res.cookie('token', token)
-    res.redirect('/create')
-
+    return res.status(200).send({
+      message: 'Вы успешно авторизировались',
+      success: true
+    })
 
 
   } catch (error) {
     console.log(error)
-    res.status(500).send({message: `Что то пошло не так ${error}`})
+    return res.status(200).send({
+      message: `Что то пошло не так ${error}`,
+      success: false
+    })
   }
 }
 

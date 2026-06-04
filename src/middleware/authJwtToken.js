@@ -11,20 +11,26 @@ console.log(process.env.SECRET_KEY)
 
 const authJwtToken = (req, res, next) => {
 
-  const token = req.cookies.token
-  if(!token) {
-    res.redirect('/login')
-    return
+  try {
+
+    const token = req.cookies.token
+    if(!token) {
+      res.redirect('/admin/login')
+      return
+    }
+    const user = jwt.verify(token , process.env.SECRET_KEY)
+
+    if(!user) {
+      res.redirect('/admin/login')
+      return
+    }
+    next()
+    
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      res.redirect('/admin/login')
+    }
   }
-
-  const user = jwt.verify(token , process.env.SECRET_KEY)
-
-  if(!user) {
-    res.redirect('/login')
-    return
-  }
-
-  next()
 
 }
 

@@ -4,13 +4,7 @@ const multer = require('multer')
 // middleware
 
 const authJwtToken = require('../middleware/authJwtToken');
-const storageTeam = require('../middleware/storageTeam')
 
-
-// middleware
-
-const newStorage = require('../middleware/storageTeam')
-const upload = multer({storage: storageTeam})
 
 // module
 
@@ -21,9 +15,9 @@ const { getTeamCard, createTeamCard, deleteTeamCard } = require('../Controller/t
 const teamRouter = express.Router();
 
 
-teamRouter.get('/team', authJwtToken, getTeamCard)
-teamRouter.post('/team', authJwtToken, upload.single('file'),  createTeamCard)
-teamRouter.post('/team/:id', authJwtToken,  deleteTeamCard)
+teamRouter.get('/team', getTeamCard)
+teamRouter.post('/team', createTeamCard)
+teamRouter.delete('/team/:id',  deleteTeamCard)
 
 //
 

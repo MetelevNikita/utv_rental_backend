@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  name     String
+  email    String
+  password String
+  createAt DateTime @default(now())
+  updateAt DateTime @default(now())
+}
+
+model Team {
+  id         Int      @id @default(autoincrement())
+  name       String
+  profession String
+  image      String
+  createAt   DateTime @default(now())
+  updateAt   DateTime @default(now())
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  title       String
+  category    String
+  description String
+  price       String
+  quantity    String
+  createAt    DateTime @default(now())
+  updateAt    DateTime @default(now())
+  imageOne    String?
+  imageThree  String?
+  imageTwo    String?
+  set         String?
+}
+
+model PackProduct {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  price       String
+  quantity    String
+  imageOne    String?
+  imageTwo    String?
+  imageThree  String?
+  createAt    DateTime @default(now())
+  updateAt    DateTime @default(now())
+  set         String?
+}
+
+model Portfolio {
+  id          Int      @id @default(autoincrement())
+  title       String
+  category    String
+  description String
+  set         String
+  link        String
+  image_one   String?
+  image_two   String?
+  image_three String?
+  createAt    DateTime @default(now())
+  updateAt    DateTime @default(now())
+
+}
+
+model Feedback {
+  id       Int      @id @default(autoincrement())
+  name     String
+  phone    String
+  email    String
+  text     String
+  agree    String
+  createAt DateTime @default(now())
+  updateAt DateTime @default(now())
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  telegramId String @default("")
+  comment   String
+  dates     String
+  agreed    Boolean
+  orderList String
+  price     String
+  createAt  DateTime @default(now())
+  updateAt  DateTime @default(now())
+}
