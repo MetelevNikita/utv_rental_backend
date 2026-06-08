@@ -116,77 +116,73 @@ const postPortfolio = async  (req, res)  =>  {
 
 
 
+const deletePortfolio = async (req, res) => {
 
-
-
-
-const deletePortfolio  = async  (req, res)  =>  {
   try {
 
     const { id } = req.params
-    console.log(id)
+
+    if (!id) {
+      return res.status(400).send({
+        message: 'Не получен id'
+      })
+    }
 
 
-    const getCuurentPortofioCard = await prisma.portfolio.findFirst({
+
+    const currentComplect = await prisma.packProduct.findFirst({
       where: {
         id: parseInt(id)
       }
     })
 
-    if (!getAllPortfolio) {
-      return res.status(200).send({
-        message: 'Не найдена карточка портфолио в базе'
+    if (!currentComplect) {
+      return res.status(400).send({
+        message: 'Не найдена карточка комплекта в базе'
       })
     }
 
+    const publicPath = path.join(process.cwd(), 'public')
 
-    console.log(getCuurentPortofioCard)
-
-
-    // let arch;
-    
-    // if (os.arch() === 'x64') {
-    //   arch = '\\'
-    // } else if (os.arch() === 'arm64' || os.arch() === 'arm') {
-    //   arch = '/'
-    // } else {
-    //   arch = '\\'
-    // }
+    const relativeImagePath = currentComplect.imageOne.replace(/^\/+/, '')
+    const filePath = path.join(publicPath, relativeImagePath);
+    const folderPath = path.dirname(filePath);
 
 
+    console.log(folderPath)
 
-    // const splitPath = getCuurentPortofioCard.image_one.split(arch)
-    // const endPath = splitPath.slice(0, splitPath.length-1).join(arch)
-    // console.log(endPath)
+    if (fs.existsSync(folderPath)) {
+      fs.rmSync(folderPath, {recursive: true, force: true})
+      console.log('Папка комплекта удалена')
+    } else {
+        console.warn('Папка не найдена:', folderPath);
+    }
 
-
-    // if (fs.existsSync(path.join(process.cwd(), 'public', endPath))) {
-    //   fs.rmdirSync(path.join(process.cwd(), 'public', endPath), {recursive: true, force: true})
-    // } else {
-    //   console.warn('Изображение в базе не найдено')
-    // }
-
-    // const deleteProtfolioCard = await prisma.portfolio.delete({
-    //   where: {
-    //     id: parseInt(id)
-    //   }
-    // })
-
-    // if (!deleteProtfolioCard) {
-    //   return res.status(400).send(`Карточка не удалена из портфолио`)
-    // }
-
-    return res.status(200).send({
-      message: `Карточка портфолио`
+    const deleteComplect = await prisma.packProduct.delete({
+      where: {
+        id: parseInt(id)
+      }
     })
 
+    if (!deleteComplect) {
+      return res.status(400).send({
+        message: 'Не удалось удалить карточку комплекта'
+      })
+    }
 
+    return res.status(200).send({
+      message: `Карточка товара ${id} успешно удалена`
+    })
+
+    
   } catch (error) {
     console.log(error)
-    res.status(500).send({message:  'Internal Server Error'})
-
+    return res.status(500).send({message: 'Не удалось получить список комплектов' })
   }
+
+
 }
+
 
 
 const patchPortfolio = async (req, res) => {

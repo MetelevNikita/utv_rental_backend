@@ -84,63 +84,75 @@ const createTeamCard = async (req, res) => {
 // delete
 
 
-const deleteTeamCard  = async  (req, res)  =>  {
-  const { id } = req.params
+const deleteTeamCard = async (req, res) => {
 
-  console.log(id)
+  try {
 
-  if(!id.typeof ===  'number')  {
-    res.status(400).json({message:  'Id не число'})
-  }
+    const { id } = req.params
 
-
-  const currentTeam = await prisma.team.findFirst({
-    where: {
-      id: Number(id)
+    if (!id) {
+      return res.status(400).send({
+        message: 'Не получен id'
+      })
     }
-  })
 
 
-  const pathUpload = path.join(process.cwd(), 'public')
-  const fullPath = path.join(pathUpload, currentTeam.image)
 
-  console.log('PATH ', fullPath)
-
-
-  if (fs.existsSync(fullPath)) {
-    fs.unlinkSync(fullPath)
-  } else {
-    console.log('Файл в папке на удаления не найден')
-  }
-
-   
-
-  const deleteTeam = await prisma.team.delete({
-    where: {
-      id: Number(id)
-    }
-  })
-
-  if (!deleteTeam) {
-    return res.status(400).json({
-      message: 'Карточка не удалена'
+    const currentComplect = await prisma.packProduct.findFirst({
+      where: {
+        id: parseInt(id)
+      }
     })
+
+    if (!currentComplect) {
+      return res.status(400).send({
+        message: 'Не найдена карточка комплекта в базе'
+      })
+    }
+
+    const publicPath = path.join(process.cwd(), 'public')
+
+    const relativeImagePath = currentComplect.imageOne.replace(/^\/+/, '')
+    const filePath = path.join(publicPath, relativeImagePath);
+    const folderPath = path.dirname(filePath);
+
+
+    console.log(folderPath)
+
+    if (fs.existsSync(folderPath)) {
+      fs.rmSync(folderPath, {recursive: true, force: true})
+      console.log('Папка комплекта удалена')
+    } else {
+        console.warn('Папка не найдена:', folderPath);
+    }
+
+    const deleteComplect = await prisma.packProduct.delete({
+      where: {
+        id: parseInt(id)
+      }
+    })
+
+    if (!deleteComplect) {
+      return res.status(400).send({
+        message: 'Не удалось удалить карточку комплекта'
+      })
+    }
+
+    return res.status(200).send({
+      message: `Карточка товара ${id} успешно удалена`
+    })
+
+    
+  } catch (error) {
+    console.log(error)
+    return res.status(500).send({message: 'Не удалось получить список комплектов' })
   }
-
-
-  return res.status(200).json({message: `Файл удален ${currentTeam.image}`})
-
-
-
-
-
-  res.send('asdasdasd')
-
-
-
 
 
 }
+
+
+
 
 
 module.exports = { getTeamCard, createTeamCard, deleteTeamCard }

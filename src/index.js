@@ -174,11 +174,11 @@ const startServer = async () => {
 
   try {
 
-      const key = await getYgKeyCache()
-      process.env.YG_KEY = key.key
+      // const key = await getYgKeyCache()
+      // process.env.YG_KEY = key.key
 
-      const webHooks = await startYouGileWebhook()
-      console.log('WEBHOOKS ', webHooks)
+      // const webHooks = await startYouGileWebhook()
+      // console.log('WEBHOOKS ', webHooks)
   
      app.listen(PORT, (req, res) => {
       console.log(`Сервер стартовал с порта: ${PORT}`)

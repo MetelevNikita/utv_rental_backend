@@ -120,34 +120,21 @@ const deleteComplect = async (req, res) => {
       })
     }
 
+    const publicPath = path.join(process.cwd(), 'public')
+
+    const relativeImagePath = currentComplect.imageOne.replace(/^\/+/, '')
+    const filePath = path.join(publicPath, relativeImagePath);
+    const folderPath = path.dirname(filePath);
 
 
-    let arch;
-    
-    if (os.arch() === 'x64') {
-      arch = '\\'
-    } else if (os.arch() === 'arm64' || os.arch() === 'arm') {
-      arch = '/'
+    console.log(folderPath)
+
+    if (fs.existsSync(folderPath)) {
+      fs.rmSync(folderPath, {recursive: true, force: true})
+      console.log('Папка комплекта удалена')
     } else {
-      arch = '\\'
+        console.warn('Папка не найдена:', folderPath);
     }
-
-    // 
-
-
-    if (currentComplect.imageOne) {
-      const splitPath = currentComplect.imageOne.split(arch)
-      const endPath = splitPath.slice(0, splitPath.length-1).join(arch)
-
-      if (fs.existsSync(path.join(process.cwd(), 'public', endPath))) {
-        fs.rmdirSync(path.join(process.cwd(), 'public', endPath), {recursive: true, force: true})
-      } else {
-        console.warn('Изображение в базе не найдено')
-      }
-    }
-
-
-
 
     const deleteComplect = await prisma.packProduct.delete({
       where: {
