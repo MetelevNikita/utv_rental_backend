@@ -4,15 +4,19 @@ const path = require('path')
 // prisma
 
 const { prisma } = require('../../lib/prisma.js')
+const { v4: uuidv4 } = require("uuid");
 
 // telegram
 
 const { bot } = require('../utils/TelegramBot.js')
 
-
 // lib
 
 const { message }  = require('../../lib/message.js')
+
+// email
+
+const { transporter } = require('./../utils/sendToEmail.js')
 
 
 async function createOrderDatabase (dataOrder) {
@@ -50,10 +54,7 @@ async function createOrderDatabase (dataOrder) {
 async function sendToTelegram(dataOrder) {
 
   const chatId = process.env.CHAT_ID
-  console.log(chatId)
-
   const telegramBot = await bot()
-  console.log(telegramBot)
 
   const newMessageTg = await telegramBot.sendMessage(chatId, dataOrder, {parse_mode: 'HTML'})
 
@@ -182,6 +183,28 @@ async function sendToYouGile(title, task) {
 }
 
 
+async function sendToEmail (data) {
+          try {
+
+            const sendEmail = await transporter.sendMail({
+              from: 'utv-license@yandex.ru',
+              to: 'Kyle.B@mail.ru', // list of recipients
+              subject: "Статус заказа", // subject line
+              text: "", // plain text body
+              html: `<b>Ваш заказ создан UTVrental.ru</b><br><p>${data}</p>`
+            })
+
+            
+            console.log("Message sent: %s", sendEmail.messageId);
+          } catch (error) {
+            console.log(error)
+            return error
+          }
+}
+
+
+
+
 // 
 
 
@@ -215,11 +238,17 @@ const postOrders = async (req, res) => {
     console.log('START SEND ORDER')
 
 
+    const uuId = uuidv4()
     const data = req.body
 
-    const { yg, tg } = message(data)
+    const newData = {
+      cardId: uuId,
+      ...data
+    }
 
-    const resOrder = await Promise.all([sendToYouGile(`Новая завявка аренды: ${data.name}`, yg), sendToTelegram(tg), createOrderDatabase(data)]).catch(error => error)
+    const { yg, tg, html} = message(newData)
+
+    const resOrder = await Promise.all([sendToYouGile(`Новая завявка аренды:${newData.cardId}`, yg), sendToTelegram(tg), createOrderDatabase(newData)]).catch(error => error)
     console.log('Все данные отправлены ', resOrder)
 
     res.status(200).send({

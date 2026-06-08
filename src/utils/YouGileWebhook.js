@@ -77,7 +77,6 @@ async function deleteYouGileWebhook (url, key, id) {
     })
 
     const data = await response.json()
-    console.log(data)
     return data
 
   } catch (error) {
@@ -106,25 +105,30 @@ async function startYouGileWebhook () {
 
 
   const getWebHook = await getYouGileWebhooks(url, key)
+  console.log(getWebHook)
 
-  if (getWebHook.length < 1) {
-      await createYouGileWebhook(url, key, urlWebhook)
-      return
+  if (!Array.isArray(getWebHook)) {
+    throw new Error('YouGile webhooks response is not an array');
   }
 
-  for (let item of getWebHook) {
-    if (item.url !== `${urlWebhook}/webhook`) {
-      console.log('Webhook Yougile не найден')
-      await createYouGileWebhook(url, key, urlWebhook)
-      return
-    }
+  const webhookUrl = `${urlWebhook}/webhook`;
+  const currentWebhook = getWebHook.find((item) => item.url === webhookUrl);
+
+
+  if (!currentWebhook) {
+    console.log('Webhook Yougile не найден');
+    const created = await createYouGileWebhook(url, key, urlWebhook);
+    console.log('Создан вебхук', created);
+    return created;
   }
 
 
-  console.log('Webhook Yougile найден')
+    console.log('Webhook Yougile найден');
+    return currentWebhook;
+  
 
-  const currentWebhook = getWebHook.find((item) => item.url == `${urlWebhook}/webhook`)
-  return currentWebhook
+
+
 
 }
 

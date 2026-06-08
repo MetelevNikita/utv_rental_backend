@@ -25,8 +25,6 @@ async function getYGColumns (boardId, key, url) {
     }
 
     const data = await responce.json()
-    console.log('DATA ', data)
-
 
     return {
         success: true,

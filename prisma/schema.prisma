@@ -82,6 +82,7 @@ model Feedback {
 
 model Order {
   id        Int      @id @default(autoincrement())
+  cardId    String @default("")
   name      String
   phone     String
   email     String @default("")
