@@ -167,72 +167,63 @@ const postProduct  = async  (req, res)  => {
 }
 
 
-const deleteProduct  = async  (req, res)  =>  {
+const deleteProduct = async (req, res) => {
   try {
-
-    const { id } = req.params
+    const { id } = req.params;
 
     const currentProduct = await prisma.product.findUnique({
       where: {
-        id: Number(id)
-      }
-    })
-
+        id: Number(id),
+      },
+    });
 
     if (!currentProduct) {
-      return res.status(200).json({
-        message: 'Такая карточка товара не найдена'
-      })
+      return res.status(404).json({
+        message: 'Такая карточка товара не найдена',
+      });
     }
 
+    if (currentProduct.imageOne) {
+      const publicRoot = path.join(process.cwd(), 'public');
 
-    // 
-
-    let arch;
-    
-    if (os.arch() === 'x64') {
-      arch = '\\'
-    } else if (os.arch() === 'arm64' || os.arch() === 'arm') {
-      arch = '/'
-    } else {
-      arch = '\\'
-    }
-
-    // 
-
-    const splitPath = currentProduct.imageOne.split(arch) ?? []
-    const endPath = splitPath.slice(0, splitPath.length-1).join(arch)
+      // убираем ведущий слэш, чтобы path.join не "съел" public
+      const relativeImagePath = currentProduct.imageOne.replace(/^\/+/, '');
 
 
-    if (fs.existsSync(path.join(process.cwd(), 'public', endPath))) {
-      fs.rmdirSync(path.join(process.cwd(), 'public', endPath), {recursive: true, force: true})
-    } else {
-      console.warn('Изображение в базе не найдено')
-    }
+      const filePath = path.join(publicRoot, relativeImagePath);
+      const folderPath = path.dirname(filePath);
+      const relativeToPublic = path.relative(publicRoot, folderPath);
 
-    const deleteProduct = await prisma.product.delete({
-      where: {
-        id: Number(id)
+      if (
+        relativeToPublic &&
+        !relativeToPublic.startsWith('..') &&
+        relativeToPublic !== ''
+      ) {
+        if (fs.existsSync(folderPath)) {
+          fs.rmSync(folderPath, { recursive: true, force: true });
+          console.log('Удалена папка:', folderPath);
+        } else {
+          console.warn('Папка не найдена:', folderPath);
+        }
+      } else {
+        console.warn('Опасный путь, удаление отменено:', folderPath);
       }
-    })
-
-    if (!deleteProduct) {
-      return res.status(400).json({
-        message: 'Product not deleted'
-      })
     }
 
-    return res.status(200).json({message: `Карточка удалена ${currentProduct.title}`})
+    await prisma.product.delete({
+      where: {
+        id: Number(id),
+      },
+    });
 
-
-
-
+    return res.status(200).json({
+      message: `Карточка удалена ${currentProduct.title}`,
+    });
   } catch (error) {
-    console.log(error)
-    res.status(500).send({message: 'Internal Server Error'})
-
+    console.log(error);
+    return res.status(500).send({ message: 'Internal Server Error' });
   }
-}
+};
 
 
 
