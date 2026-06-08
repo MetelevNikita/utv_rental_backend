@@ -3,6 +3,16 @@ const path = require('path')
 
  function base64ToImageProduct(base64String, subfolder, endfolder, name) {
 
+
+    if (!base64String) {
+      throw new Error('base64String is required');
+    }
+
+    if (!subfolder || !endfolder) {
+      throw new Error('subfolder and endfolder are required');
+    }
+
+
     let pathToFolder
 
     pathToFolder = path.join(process.cwd(), 'public', 'upload', 'equipment', subfolder, endfolder)
