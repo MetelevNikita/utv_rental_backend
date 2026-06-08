@@ -26,8 +26,7 @@ const getUsers = async (req, res) => {
 const createUser = async  (req, res)  =>  {
   try  {
     const {name, email, password, verifyPassword}  = req.body;
-
-
+ 
 
     if (!name || !email || !password) {
       return res.status(200).send({

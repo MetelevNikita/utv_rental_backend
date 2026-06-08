@@ -128,6 +128,8 @@ async function getYouGileKey() {
         success: false
       }
 
+      console.log(companyId)
+
     const youGileKeys = await youGileKey(companyId)
 
     if (!youGileKeys) {

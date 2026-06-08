@@ -219,7 +219,7 @@ const postOrders = async (req, res) => {
 
     const { yg, tg } = message(data)
 
-    const resOrder = await Promise.all([sendToYouGile(`Новая завявка аренды${data.name}`, yg), sendToTelegram(tg), createOrderDatabase(data)]).catch(error => error)
+    const resOrder = await Promise.all([sendToYouGile(`Новая завявка аренды: ${data.name}`, yg), sendToTelegram(tg), createOrderDatabase(data)]).catch(error => error)
     console.log('Все данные отправлены ', resOrder)
 
     res.status(200).send({

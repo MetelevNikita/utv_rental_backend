@@ -13,7 +13,10 @@ async function bot () {
 
 
   const agent = new SocksProxyAgent(
-     `socks5h://${process.env.PROXY_USER}:${process.env.PROXY_PASSWORD}@${process.env.PROXY_HOST}:${process.env.PROXY_PORT}`,
+     `socks5h://${process.env.PROXY_USER}:${process.env.PROXY_PASSWORD}@${process.env.PROXY_HOST}:${process.env.PROXY_PORT}`,{
+      timeout: 30000,
+      keepAlive: false
+     }
   )
 
   if (!TOKEN) {
@@ -33,7 +36,8 @@ async function bot () {
     },
     request: {
       agent,
-      timeout: 10000
+      timeout: 30000
+      
     }
   })
 }

@@ -14,9 +14,6 @@ const postLogin = async (req, res) => {
 
     const {email, password} = req.body;
 
-    console.log(email)
-    console.log(password)
-
 
     if (email.trim().length <= 0 || password.trim().length <= 0)   {
       return res.status(200).send({
@@ -44,7 +41,6 @@ const postLogin = async (req, res) => {
     const hashPassword = await bcrypt.compare(password, findUser.password)
 
     const token  = jwt.sign({email: findUser.email}, process.env.SECRET_KEY, {expiresIn: '1h'})
-    console.log(token)
     res.cookie('token', token)
     return res.status(200).send({
       message: 'Вы успешно авторизировались',

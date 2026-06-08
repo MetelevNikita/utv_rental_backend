@@ -14,7 +14,11 @@ dotenv.config({
 // module
 
 const { telegramBot } = require('./utils/TelegramBot.js')
+
+// 
+
 const { getYgKeyCache } = require('./utils/YouGileKey.js')
+const { startYouGileWebhook } = require('./utils/YouGileWebhook.js')
 
 //
 
@@ -32,6 +36,7 @@ const productRouter = require('./Router/productRouter')
 const portfolioRouter = require('./Router/portfolioRouter')
 const packRouter = require('./Router/packRouter.js')
 const ordersRouter = require('./Router/ordersRouter.js')
+const webhookRouter = require('./Router/webhookRouter.js')
 
 // 
 
@@ -45,9 +50,6 @@ const app = express();
 const publicPath = path.join(__dirname, '../public');
 const appPath = path.join(__dirname, '../../app/build')
 const adminPath = path.join(__dirname, '../../admin/build')
-
-console.log(publicPath)
-console.log(appPath)
 
 
 // Проверяем существование папок
@@ -88,6 +90,7 @@ app.use('/api/v1', portfolioRouter);
 app.use('/api/v1', packRouter)
 app.use('/api/v1', ordersRouter)
 app.use('/api/v1', feedbackRouter)
+app.use('/', webhookRouter)
 
 
 if (fs.existsSync(adminPath)) {
@@ -171,10 +174,15 @@ const startServer = async () => {
 
   try {
 
-    const key = await getYgKeyCache()
-    process.env.YG_KEY = key.key
+      const key = await getYgKeyCache()
+      process.env.YG_KEY = key.key
+
+      const webHooks = await startYouGileWebhook()
+      console.log('WEBHOOKS ', webHooks)
   
-     app.listen(PORT, () => {console.log(`Сервер стартовал с порта: ${PORT}`);});
+     app.listen(PORT, (req, res) => {
+      console.log(`Сервер стартовал с порта: ${PORT}`)
+    });
   } catch (error) {
     console.log(error)
   }
