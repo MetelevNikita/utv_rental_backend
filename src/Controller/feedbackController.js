@@ -1,42 +1,39 @@
-const { telegramBot } = require('./../utils/TelegramBot.js')
+const { bot } = require('./../utils/TelegramBot.js')
 const { prisma } = require('./../../lib/prisma.js')
+const { error } = require('node:console')
 
 
 
 
-
-const messageObj = {
-
-  sendToTelegram: async function (chatId) {
+async function sendToTelegram (data) {
     try {
-    const bot = telegramBot()
+    const telegramBot = await bot()
+    const id = process.env.CHAT_ID
 
+    let message = `Новоое сообщение с сайта\n\nИмя автора - ${data.name}\n\nТелефон - ${data.phone}\n\nemail - ${data.email}\n\nСообщение - ${data.text}\n\nДата создания ${new Date().toLocaleDateString('RU-ru')}`
 
-    console.log('CHAT ID!!!!!!', chatId)
-
-    let message = `Новоое сообщение с сайтаn\n\nИмя автора - ${this.name}\nТелефон - ${this.phone} \t email - ${this.email}\n\nСообщение - ${this.text}\n\nДата создания ${this.createAt}`
-
-    const resMessage = await bot.sendMessage(chatId, message)
+    const resMessage = await telegramBot.sendMessage(id, message)
     console.log(resMessage)
-    console.warn('Сообщение успешно отправлено')
       
     } catch (error) {
-      return error
+      console.error(`Ошибка отправки сообщения в телеграм ${error.message}`)
+      return `Ошибка отправки сообщения в телеграм ${error.message}`
+    }
+  }
+
+  
+
+  async function sendToDB (data) {
+
+
+    const newData = {
+      ...data,
+      agree: data.agree.toString()
     }
 
-  },
-  sendToYouGile: async function () {
-    console.warn('Сообщение в ЮДЖАЙЛ Отправлено')
-  },
-  sendToDB: async function () {
+  
     const newMessage =  await prisma.feedback.create({
-      data: {
-        name: this.name,
-        phone: this.phone,
-        email: this.email,
-        text: this.text,
-        agree: this.agree.toString()
-      }
+      data: newData
     })
 
     if (!newMessage) {
@@ -45,8 +42,8 @@ const messageObj = {
     }
 
     console.log('Сообщение в базу отправлено')
-  },
-}
+  }
+
 
 
 const getFeedbackMessage = async (req, res) => {
@@ -74,25 +71,28 @@ const getFeedbackMessage = async (req, res) => {
 
 const createFeedbackMessage = async (req, res) => {
 
-  const data = req.body
-  console.log(data)
+  try {
 
-  console.log('Start')
-
-  const newObj = Object.assign(data, messageObj)
-
-  Promise.all([newObj.sendToTelegram('85252645'), newObj.sendToDB(data)]).then((data) => {
+    const data = req.body
     console.log(data)
-  })
 
+    await Promise.all([sendToDB(data), sendToTelegram(data)]).then((res) => {
+      console.log('Данные отправлены ', data)
+    }).catch((error) => {
+      console.error('Ошибка отправки данных ', error)
+    })
 
+    res.status(200).send({
+      message: 'Success'
+    })
+    
+  } catch (error) {
+    console.error(`Ошибка создания сообщения фидбека ${error.message}`)
+    res.status(500).send({
+      message: 'error'
+    })
+  }
 
-
-
-
-  res.status(200).send({
-    message: 'Success'
-  })
 
 
 } 
