@@ -63,8 +63,8 @@ const categoryArr = [
     value: 'light'
   },
   {
-    item: 'Звук',
-    value: 'sound'
+    item: 'Оптика',
+    value: 'lens'
   },
   {
     item: 'Операторское оборудование',
@@ -102,6 +102,8 @@ const postProduct  = async  (req, res)  => {
 
     const {title, category, description, set, price, quantity, imageOne, imageTwo, imageThree} = req.body
     console.log(title, category, description, price, quantity)
+
+    console.log(category)
 
 
     const currentCategory = categoryArr.find(item => item.value === category) ?? 'camera'
