@@ -37,10 +37,16 @@ const portfolioRouter = require('./Router/portfolioRouter')
 const packRouter = require('./Router/packRouter.js')
 const ordersRouter = require('./Router/ordersRouter.js')
 const webhookRouter = require('./Router/webhookRouter.js')
+const bidRouter = require('./Router/bidRouter.js')
 
 // 
 
 const feedbackRouter = require('./Router/feedbackRouter')
+
+
+// politic
+
+const docsRouter = require('./Router/docsRouter.js')
 
 //
 
@@ -90,6 +96,9 @@ app.use('/api/v1', portfolioRouter);
 app.use('/api/v1', packRouter)
 app.use('/api/v1', ordersRouter)
 app.use('/api/v1', feedbackRouter)
+app.use('/api/v1', docsRouter)
+app.use('/api/v1', bidRouter)
+
 app.use('/', webhookRouter)
 
 

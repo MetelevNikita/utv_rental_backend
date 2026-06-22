@@ -95,3 +95,15 @@ model Order {
   createAt  DateTime @default(now())
   updateAt  DateTime @default(now())
 }
+
+
+model bid {
+  id Int @id @default(autoincrement())
+  titleForm String
+  fio String
+  phone String
+  email String
+  message String
+  createAt DateTime @default(now())
+  updateAt DateTime @default(now())
+}
