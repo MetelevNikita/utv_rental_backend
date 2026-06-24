@@ -1,3 +1,8 @@
+const url = process.env.YG_URL
+const key = process.env.YG_KEY
+const urlWebhook = process.env.YG_WEBHOOK_URL
+
+
 async function getYouGileWebhooks (url, key) {
 
   try {
@@ -64,8 +69,7 @@ async function createYouGileWebhook (url, key, endpoint) {
 
 async function deleteYouGileWebhook (url, key, id) {
   try {
-
-    const response = await fetch(`${url}/webhooks/${id}`, {
+    const response = await fetch(`https://ru.yougile.com/api-v2/webhooks/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -77,6 +81,7 @@ async function deleteYouGileWebhook (url, key, id) {
     })
 
     const data = await response.json()
+    console.log(data)
     return data
 
   } catch (error) {
@@ -105,6 +110,12 @@ async function startYouGileWebhook () {
 
 
   const getWebHook = await getYouGileWebhooks(url, key)
+
+
+  for (let item of getWebHook) {
+    await deleteYouGileWebhook(urlWebhook, key, item.id)
+    console.log(`webhook ${item.id} удален`)
+  }
 
   if (!Array.isArray(getWebHook)) {
     throw new Error('YouGile webhooks response is not an array');
