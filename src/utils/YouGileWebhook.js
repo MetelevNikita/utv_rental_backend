@@ -105,7 +105,6 @@ async function startYouGileWebhook () {
 
 
   const getWebHook = await getYouGileWebhooks(url, key)
-  console.log(getWebHook)
 
   if (!Array.isArray(getWebHook)) {
     throw new Error('YouGile webhooks response is not an array');
